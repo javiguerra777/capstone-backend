@@ -12,6 +12,13 @@ const roomSchema = new mongoose.Schema({
   gameUsers: {
     type: Array,
   },
+  score: {
+    type: Array,
+  },
+  maxUsers: {
+    type: Number,
+    required: true,
+  },
   host: {
     type: String,
     required: true,

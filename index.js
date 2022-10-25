@@ -5,6 +5,11 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const Room = require('./model/Room');
+const routes = require('./routes/routes');
+const {
+  joinRoom,
+  leaveRoom,
+} = require('./socket-utils/utils');
 
 const app = express();
 const server = http.createServer(app);
@@ -22,70 +27,42 @@ const port = process.env.PORT || 5000;
 mongoose.connect(process.env.DB_KEY);
 const database = mongoose.connection;
 database.on('error', (error) => {
-    console.log(error)
-})
-
+  console.log(error)
+});
 database.once('connected', () => {
-    console.log('Database Connected');
-})
-const users = [];
-// rest api functionality
-app.route('/').get(async (req, res) => {
-  try {
-    res.status(200).json('Welcome to the videogame server');
-  } catch (err) {
-    res.status(400).json(err.message);
-  }
+  console.log('Database Connected');
 });
-app.route('/room/:id').get(async (req, res) => {
-  try {
-    const { id } = req.params;
-    const data = await Room.findById(id);
-    res.status(200).json(data);
-  } catch (err) {
-    res.status(400).json(err.message);
-  }
-});
-app.route('/rooms').get(async (req, res) => {
-  try {
-    const data = await Room.find();
-    res.status(200).json(data);
-  } catch (err) {
-    res.status(400).json(err.message);
-  }
-});
-app.route('/createRoom').post(async (req, res) => {
-  try {
-    const data = new Room({
-      name: req.body.name,
-      host: req.body.username,
-    });
-    const roomToSave = await data.save();
-    res.status(200).json(roomToSave);
-  } catch (err) {
-    res.status(400).json(err.message);
-  }
-});
+// api routes
+app.use(routes);
 // socket.io functionality
 io.on('connection', (socket) => {
-  // removes user from room
-  function leaveRoom(id) {
-    const index = users.findIndex((user) => user.id === id);
-    if (index !== -1) {
-      return users.splice(index, 1)[0];
-    }
-  }
   socket.on('join_room', async ({ room, username }) => {
     try {
       const startingCoords = {
         x: 500,
         y: 1000,
-      }
+      };
       const secondaryCoords = {
         x: 1000,
         y: 1000,
+      };
+      const thirdCoords = {
+        x: 1500,
+        y: 1500,
       }
-      await users.push({ id: socket.id, room, username });
+      const fourthCoords = {
+        x: 500,
+        y: 500
+      }
+      const fifthCoords = {
+        x: 1000,
+        y: 500,
+      }
+      const sixthCoords = {
+        x: 1000,
+        y: 1500,
+      }
+      await joinRoom(socket.id, username, room);
       await Room.updateOne(
         { _id: room },
         {
@@ -96,33 +73,40 @@ io.on('connection', (socket) => {
       );
       const rooms = await Room.find();
       const theRoom = await Room.findById(room);
-      let existing = false
+      let userCoords;
+      if (theRoom.gameUsers.length === 0) {
+        userCoords = startingCoords;
+      }
       theRoom.gameUsers.forEach((theUser) => {
         if (theUser.startingCoords && theUser.startingCoords.x === startingCoords.x && theUser.startingCoords.y === startingCoords.y) {
-          existing = true;
+          userCoords = secondaryCoords;
+          return;
+        } else if (theUser.startingCoords && theUser.startingCoords.x === secondaryCoords.x && theUser.startingCoords.y === secondaryCoords.y) {
+          userCoords = thirdCoords;
+          return;
+        } else if (theUser.startingCoords && theUser.startingCoords.x === thirdCoords.x && theUser.startingCoords.y === thirdCoords.y) {
+          userCoords = fourthCoords;
+          return;
+        } else if (theUser.startingCoords && theUser.startingCoords.x === fourthCoords.x && theUser.startingCoords.y === fourthCoords.y) {
+          userCoords = fifthCoords;
+          return;
+        } else if (theUser.startingCoords && theUser.startingCoords.x === thirdCoords.x && theUser.startingCoords.y === thirdCoords.y) {
+          userCoords = sixthCoords;
+          return;
+        } else {
+          userCoords = startingCoords;
+          return;
         }
       });
-      if (existing) {
-        await Room.updateOne(
+      await Room.updateOne(
           { _id: room },
           {
             $push: {
-            gameUsers: {id: socket.id, username, direction: 'down', startingCoords: {x: secondaryCoords.x, y: secondaryCoords.y}}
+            gameUsers: {id: socket.id, username, direction: 'down', startingCoords: {x: userCoords.x, y: userCoords.y}}
             }
           }
         )
-        socket.emit('update_coords', secondaryCoords)
-      } else {
-        await Room.updateOne(
-          { _id: room },
-          {
-            $push: {
-            gameUsers: {id: socket.id, username, direction: 'down', startingCoords}
-            }
-          }
-        )
-        socket.emit('update_coords', startingCoords)
-      }
+      await socket.emit('update_coords', userCoords)
       await socket.join(room);
       io.in(room).emit('updatedRoom', theRoom);
       io.emit('updatedRooms', rooms);
@@ -152,7 +136,7 @@ io.on('connection', (socket) => {
       );
       const theRoom = await Room.findById(data.id);
       await socket.leave(data.id);
-      socket.to(data.id).emit('playerLeft');
+      socket.to(data.id).emit('playerLeft', socket.id);
       if (theRoom.users.length < 2) {
         socket.to(data.id).emit('cant_start');
       }
@@ -185,15 +169,15 @@ io.on('connection', (socket) => {
     }
   });
   // game methods
-  socket.on('join_game', async (data) => {
+  socket.on('join_home', async (data) => {
     try {
-      await socket.to(data.room).emit('playerJoin', data);
+      await socket.to(data.room).emit('new_player', {username: data.username, socketId: socket.id});
       const usersInRoom = await Room.findById(data.room);
       const otherUsers = usersInRoom.users.filter((theUser) => theUser.id !== socket.id);
       if (otherUsers.length > 0) {
-        await socket.emit('existingPlayer', otherUsers[0]);
+        await socket.emit('existingPlayers', otherUsers);
       }
-      if (usersInRoom.users.length === 2) {
+      if (usersInRoom.users.length >= 2) {
         await io.in(data.room).emit('can_start');
       }
     } catch (err) {
@@ -211,7 +195,7 @@ io.on('connection', (socket) => {
     try {
       const gameUsers = await Room.findById(data.room)
       const otherUsers = await gameUsers.gameUsers.filter((theUser) => theUser.id !== socket.id);
-      await socket.emit('main_join', otherUsers[0]);
+      await socket.emit('existing_game_players', otherUsers);
     } catch (err) {
       socket.emit('server_err', err);
     }
@@ -231,14 +215,14 @@ io.on('connection', (socket) => {
         { _id: room, "users.id": socket.id },
         { $set: { "users.$.x": x, "users.$.y": y, "users.$.direction": direction } }
       );
-      socket.to(room).emit('playerMoveHome', { x, y, direction });
+      socket.to(room).emit('playerMoveHome', { x, y, direction, socketId: socket.id });
     } catch (err) {
       socket.emit('server_err', err);
     }
   });
   socket.on('moveHomeEnd', async ({ direction, room }) => {
     try {
-      socket.to(room).emit('moveHomeEnd', direction);
+      socket.to(room).emit('moveHomeEnd', {direction, socketId: socket.id});
     } catch (err) {
       socket.emit('server_err', err);
     }
@@ -246,14 +230,14 @@ io.on('connection', (socket) => {
   // main game movements
   socket.on('move', async ({ x, y, direction, room, respawn }) => {
     try {
-      socket.to(room).emit('playerMove', { x, y, direction, respawn });
+      socket.to(room).emit('playerMove', { x, y, direction, socketId: socket.id, respawn });
     } catch (err) {
       socket.emit('server_err', err);
     }
   });
   socket.on('moveEnd', async ({ direction, room }) => {
     try {
-      socket.to(room).emit('playerMoveEnd', direction);
+      socket.to(room).emit('playerMoveEnd', {direction, socketId: socket.id});
     } catch (err) {
       socket.emit('server_err', err);
     }
@@ -265,6 +249,14 @@ io.on('connection', (socket) => {
       socket.emit('server_err', err);
     }
   });
+  socket.on('end_game_scores', async (id) => {
+    try {
+      const data = await Room.findById(id);
+      io.in(id).emit('all_scores', data.score);
+    } catch (err) {
+      socket.emit('server_err', err);
+    }
+  })
   socket.on('return_to_lobby', async ({ room }) => {
     try {
       io.in(room).emit('lobby');
