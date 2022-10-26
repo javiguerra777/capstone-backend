@@ -140,6 +140,12 @@ io.on('connection', (socket) => {
       if (theRoom.users.length < 2) {
         socket.to(data.id).emit('cant_start');
       }
+      if (theRoom.users.length === 0) {
+        await Room.updateOne(
+          { _id: data.id },
+          { started: false }
+        );
+      }
       io.in(data.id).emit('updatedRoom', theRoom);
       const rooms = await Room.find();
       io.emit('updatedRooms', rooms);
@@ -186,7 +192,13 @@ io.on('connection', (socket) => {
   });
   socket.on('start_game', async (room) => {
     try {
+      await Room.updateOne(
+        { _id: room },
+        { started: true },
+      );
+      const rooms = Room.find();
       await socket.to(room).emit('play_game');
+      io.emit('updatedRooms', rooms);
     } catch (err) {
       socket.emit('server_err', err);
     }
@@ -252,7 +264,7 @@ io.on('connection', (socket) => {
   socket.on('end_game_scores', async (id) => {
     try {
       const data = await Room.findById(id);
-      io.in(id).emit('all_scores', data.score);
+      socket.emit('all_scores', data.score);
     } catch (err) {
       socket.emit('server_err', err);
     }

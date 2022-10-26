@@ -19,6 +19,9 @@ const roomSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  started: {
+    type: Boolean,
+  },
   host: {
     type: String,
     required: true,
