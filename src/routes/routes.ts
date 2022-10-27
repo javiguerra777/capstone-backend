@@ -1,5 +1,5 @@
-const express = require('express');
-const Room = require('../model/Room');
+import express from 'express';
+import Room from '../model/Room';
 
 const router = express.Router();
 // rest api functionality
@@ -56,4 +56,5 @@ router.route('/createRoom').post(async (req, res) => {
     res.status(400).json(err.message);
   }
 });
-module.exports = router;
+
+export default router;
