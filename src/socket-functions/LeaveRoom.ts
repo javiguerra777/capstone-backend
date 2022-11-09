@@ -18,9 +18,6 @@ const leaveLobby = (socket, io) => {
       const theRoom = await Room.findById(data.id);
       await socket.leave(data.id);
       socket.to(data.id).emit('playerLeft', socket.id);
-      if (theRoom && theRoom.users.length < 2) {
-        socket.to(data.id).emit('cant_start');
-      }
       if (theRoom?.users.length === 0) {
         await Room.updateOne(
           { _id: data.id },

@@ -7,15 +7,13 @@ export const joinHome = (socket, io) => {
     try {
       await socket.to(data.room).emit('new_player', {
         username: data.username,
-        socketId: socket.id
+        socketId: socket.id,
+        sprite: data.sprite
       });
       const usersInRoom = await Room.findById(data.room);
       const otherUsers = usersInRoom?.users.filter((theUser) => theUser.id !== socket.id);
       if (otherUsers && otherUsers.length > 0) {
         await socket.emit('existingPlayers', otherUsers);
-      }
-      if (usersInRoom && usersInRoom.users.length >= 2) {
-        await io.in(data.room).emit('can_start');
       }
     } catch (err) {
       handleError(socket, err.message);
@@ -62,11 +60,10 @@ export const gameOver = (socket) => {
   });
 }
 // display end game scores
-export const endGameScores = (socket) => {
-  socket.on('end_game_scores', async (id) => {
+export const endGame = (socket) => {
+  socket.on('winner', async ({username, room}) => {
     try {
-      const data = await Room.findById(id);
-      socket.emit('all_scores', data?.score);
+      socket.to(room).emit('game_over', username);
     } catch (err) {
       handleError(socket, err.message);
     }

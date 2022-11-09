@@ -3,38 +3,38 @@ import { joinRoom } from "../socket-utils/utils";
 import Room from "../model/Room";
 
 const joinGame = (socket, io) => {
-socket.on('join_room', async ({ room, username }) => {
+socket.on('join_room', async ({ room, username, sprite }) => {
     try {
       const startingCoords = {
-        x: 500,
-        y: 1000,
+        x: 400,
+        y: 400,
       };
       const secondaryCoords = {
-        x: 1000,
-        y: 1000,
+        x: 1400,
+        y: 400,
       };
       const thirdCoords = {
         x: 1500,
         y: 1500,
       }
       const fourthCoords = {
-        x: 500,
-        y: 500
+        x: 300,
+        y: 1500
       }
       const fifthCoords = {
-        x: 1000,
-        y: 500,
+        x: 1300,
+        y: 1000,
       }
       const sixthCoords = {
         x: 1000,
-        y: 1500,
+        y: 1250,
       }
       await joinRoom(socket.id, username, room);
       await Room.updateOne(
         { _id: room },
         {
           $push: {
-            users: { id: socket.id, username, direction: 'down', x: 500, y: 500 },
+            users: { id: socket.id, username, direction: 'down', x: 500, y: 500, sprite },
           }
         },
       );
@@ -69,7 +69,7 @@ socket.on('join_room', async ({ room, username }) => {
           { _id: room },
           {
             $push: {
-            gameUsers: {id: socket.id, username, direction: 'down', startingCoords: {x: userCoords.x, y: userCoords.y}}
+            gameUsers: {id: socket.id, username, direction: 'down', sprite, startingCoords: {x: userCoords.x, y: userCoords.y}}
             }
           }
         )

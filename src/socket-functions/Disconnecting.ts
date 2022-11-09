@@ -19,7 +19,10 @@ const disconnecting = (socket, io) => {
       if (pUser) {
         await socket.leave(pUser.room);
       }
-      const rooms = Room.find();
+      const theRoom = await Room.findById(pUser.room);
+      const rooms = await Room.find();
+      socket.to(pUser.room).emit('playerLeft', socket.id);
+      io.in(pUser.room).emit('updatedRoom', theRoom);
       io.emit('updatedRooms', rooms);
     } catch (err) {
       handleError(socket, err.message);

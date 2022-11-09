@@ -6,7 +6,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import routes from './src/routes/routes';
 import { returnToLobby, updateRooms } from './src/socket-functions/Rooms';
-import { endGameScores, gameOver, homeGame, joinHome, startGame } from './src/socket-functions/Game';
+import { endGame, gameOver, homeGame, joinHome, startGame } from './src/socket-functions/Game';
 import { chat } from './src/socket-functions/Communication';
 import { moveHome, moveHomeEnd } from './src/socket-functions/HomeRoomMoves';
 import { move, moveEnd, shoot } from './src/socket-functions/MainMove';
@@ -39,6 +39,8 @@ database.once('connected', () => {
 app.use(routes);
 // socket.io functionality and handling rooms
 io.on('connection', (socket) => {
+  // console.log('user joined', socket.id);
+  socket.emit('myId', socket.id);
   joinGame(socket, io);
   updateRooms(socket, io);
   leaveLobby(socket, io);
@@ -57,7 +59,7 @@ io.on('connection', (socket) => {
   moveEnd(socket);
   shoot(socket);
   // handing end game scene
-  endGameScores(socket);
+  endGame(socket);
   returnToLobby(socket, io);
   gameOver(socket);
 });
