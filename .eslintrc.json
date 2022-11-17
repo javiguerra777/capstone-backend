@@ -1,7 +1,8 @@
 {
     "env": {
-        "browser": true,
-        "es2021": true
+        "browser": false,
+        "es2021": true,
+        "node": true
     },
     "extends":[
       "standard-with-typescript",
@@ -14,9 +15,14 @@
     ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-        "ecmaVersion": "latest",
-        "sourceType": "module"
+    "ecmaFeatures": {
+      "jsx": true
     },
+    "ecmaVersion":"latest",
+    "project": "./tsconfig.json",
+    "tsconfigRootDir": "./",
+    "sourceType": "module"
+  }, 
     "plugins": [
       "@typescript-eslint",
       "prettier",
@@ -29,12 +35,19 @@
     "no-param-reassign": "off",
     "no-use-before-define": "off",
     "@typescript-eslint/no-use-before-define": ["error"],
+    "@typescript-eslint/no-floating-promises": "off",
+    "@typescript-eslint/strict-boolean-expressions": "off",
+    "no-return-await": "off",
+    "@typescript-eslint/no-misused-promises": "off",
+    "class-methods-use-this": "off",
+    "@typescript-eslint/restrict-template-expressions": "off",
+    "@typescript-eslint/no-empty-function": "off",
+    "@typescript-eslint/explicit-function-return-type": "off",
     "import/extensions": [
       "error",
       "ignorePackages",
       {
-        "ts": "never",
-        "tsx": "never"
+        "ts": "never"
       }
     ],
     "no-shadow": "off",
@@ -50,11 +63,14 @@
 "import/no-import-module-exports": ["error", {
     "exceptions": ["./webpack/base.ts"]
 }],
-"import/no-extraneous-dependencies": ["error", {"devDependencies": true}]  },
+"import/no-extraneous-dependencies": ["error", {"devDependencies": true}]
+  },
   "settings": {
     "import/resolver": {
-      "typescript": {}
+      "node": {
+        "moduleDirectory": ["src", "node_modules"],
+        "extensions": [".js", ".jsx", ".ts", ".tsx"]
+      }
     }
   }
-
 }

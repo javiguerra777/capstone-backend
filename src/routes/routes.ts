@@ -1,60 +1,30 @@
 import express from 'express';
-import Room from '../model/Room';
+import RoomController from '../controllers/RoomController';
+import EmailController from '../controllers/EmailController';
 
+const roomController = new RoomController();
+const emailContoller = new EmailController();
 const router = express.Router();
 // rest api functionality
-router.route('/').get(async (req, res) => {
-  try {
-    res.status(200).json('Welcome to the videogame server');
-  } catch (err) {
-    res.status(400).json(err.message);
-  }
-});
-router.route('/room/:id').get(async (req, res) => {
-  try {
-    const { id } = req.params;
-    const data = await Room.findById(id);
-    res.status(200).json(data);
-  } catch (err) {
-    res.status(400).json(err.message);
-  }
-});
-router.route('/room/:id').put(async (req, res) => {
-  try {
-    const { id } = req.params;
-    const data = await Room.updateOne(
-      { _id: id },
-      {
-        $push: {
-          score: { username: req.body.username, score: req.body.score }
-        }
-      }
-    );
-    return res.status(200).json(data);
-  } catch (err) {
-    return res.status(400).json(err.message);
-  }
-});
-router.route('/rooms').get(async (req, res) => {
-  try {
-    const data = await Room.find();
-    res.status(200).json(data);
-  } catch (err) {
-    res.status(400).json(err.message);
-  }
-});
-router.route('/createRoom').post(async (req, res) => {
-  try {
-    const data = new Room({
-      name: req.body.name,
-      host: req.body.username,
-      maxUsers: req.body.maxPlayers
-    });
-    const roomToSave = await data.save();
-    res.status(200).json(roomToSave);
-  } catch (err) {
-    res.status(400).json(err.message);
-  }
-});
+router.get(
+  '/',
+  async (req, res) => await roomController.firstRoute(req, res),
+);
+router
+  .route('/room/:id')
+  .get(async (req, res) => await roomController.getRoom(req, res))
+  .put(async (req, res) => await roomController.updateRoom(req, res));
+router.get(
+  '/rooms',
+  async (req, res) => await roomController.getAllRooms(req, res),
+);
+router.post(
+  '/createRoom',
+  async (req, res) => await roomController.createRoom(req, res),
+);
+router.post(
+  '/sendEmail',
+  async (req, res) => await emailContoller.sendEmail(req, res),
+);
 
 export default router;

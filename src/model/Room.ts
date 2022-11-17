@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const roomSchema = new mongoose.Schema({
   name: {
@@ -25,7 +25,7 @@ const roomSchema = new mongoose.Schema({
   host: {
     type: String,
     required: true,
-  }
+  },
 });
 const Room = mongoose.model('Room', roomSchema);
 
