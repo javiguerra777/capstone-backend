@@ -140,6 +140,7 @@ export default class SocketRoomHandler {
   async leaveRoom(io: Server) {
     this.socket.on('leave_room', async (data) => {
       try {
+        console.log('user left');
         await leave(this.socket.id);
         await Room.updateOne(
           { _id: data.id },

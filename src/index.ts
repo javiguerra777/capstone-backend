@@ -58,7 +58,7 @@ io.on('connection', (socket) => {
   socketMove.shoot();
   // handing end game scene
   socketGame.endGame();
-  socketGame.gameOver();
+  socketGame.gameOver(io);
 });
 
 server.listen(port, () =>
